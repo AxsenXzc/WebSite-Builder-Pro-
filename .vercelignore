@@ -1,0 +1,6 @@
+# Materiale derivato e artefatti locali: non servono per costruire il sito.
+.atelier-preview
+.ref
+website-builder-pro-main.zip
+.next-dev.log
+tsconfig.tsbuildinfo

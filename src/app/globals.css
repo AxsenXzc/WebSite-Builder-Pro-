@@ -1,0 +1,294 @@
+@import "tailwindcss";
+
+/*
+ * Design system dell'APP (non del sito generato: quello vive in tokens.css).
+ * Superfici scure, densità da strumento professionale, accento ciano-viola.
+ */
+@theme {
+  --color-surface-950: oklch(0.145 0.014 265);
+  --color-surface-900: oklch(0.176 0.016 265);
+  --color-surface-850: oklch(0.208 0.018 265);
+  --color-surface-800: oklch(0.244 0.019 265);
+  --color-surface-700: oklch(0.31 0.02 265);
+  --color-surface-600: oklch(0.4 0.022 265);
+
+  --color-ink-100: oklch(0.97 0.005 265);
+  --color-ink-300: oklch(0.86 0.01 265);
+  --color-ink-500: oklch(0.68 0.014 265);
+  --color-ink-600: oklch(0.58 0.016 265);
+
+  --color-accent-400: oklch(0.78 0.13 210);
+  --color-accent-500: oklch(0.7 0.15 220);
+  --color-accent-600: oklch(0.6 0.16 232);
+  --color-violet-500: oklch(0.62 0.19 295);
+
+  --color-ok-500: oklch(0.72 0.15 155);
+  --color-warn-500: oklch(0.8 0.14 80);
+  --color-danger-500: oklch(0.65 0.19 25);
+
+  --radius-tool: 0.625rem;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, "JetBrains Mono", SFMono-Regular, monospace;
+}
+
+@layer base {
+  html,
+  body {
+    height: 100%;
+  }
+  body {
+    background: var(--color-surface-950);
+    color: var(--color-ink-100);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection {
+    background: var(--color-accent-500);
+    color: var(--color-surface-950);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-accent-400);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .panel {
+    background: var(--color-surface-900);
+    border: 1px solid color-mix(in oklab, var(--color-surface-700) 70%, transparent);
+    border-radius: var(--radius-tool);
+  }
+  .panel-flat {
+    background: var(--color-surface-850);
+    border: 1px solid color-mix(in oklab, var(--color-surface-700) 60%, transparent);
+    border-radius: var(--radius-tool);
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.5rem 0.9rem;
+    border-radius: var(--radius-tool);
+    border: 1px solid color-mix(in oklab, var(--color-surface-700) 80%, transparent);
+    background: var(--color-surface-850);
+    color: var(--color-ink-100);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    transition: background 140ms ease, border-color 140ms ease, transform 140ms ease;
+  }
+  .btn:hover:not(:disabled) {
+    background: var(--color-surface-800);
+    border-color: var(--color-surface-600);
+  }
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .btn-primary {
+    background: var(--color-accent-600);
+    border-color: transparent;
+    color: oklch(0.14 0.02 250);
+    font-weight: 600;
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: var(--color-accent-500);
+  }
+  .btn-ghost {
+    background: transparent;
+    border-color: transparent;
+  }
+  .btn-ghost:hover:not(:disabled) {
+    background: var(--color-surface-850);
+  }
+  .field {
+    width: 100%;
+    padding: 0.55rem 0.75rem;
+    border-radius: var(--radius-tool);
+    border: 1px solid color-mix(in oklab, var(--color-surface-700) 80%, transparent);
+    background: var(--color-surface-950);
+    color: var(--color-ink-100);
+    font-size: 0.875rem;
+  }
+  .field::placeholder {
+    color: var(--color-ink-600);
+  }
+  .field:focus {
+    border-color: var(--color-accent-500);
+    outline: none;
+  }
+  .label {
+    font-size: 0.6875rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-ink-500);
+    font-family: var(--font-mono);
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 999px;
+    border: 1px solid color-mix(in oklab, var(--color-surface-700) 80%, transparent);
+    font-size: 0.6875rem;
+    color: var(--color-ink-500);
+    font-family: var(--font-mono);
+  }
+  .scroll-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-surface-700) transparent;
+  }
+
+  /*
+   * Altezza di viewport: `100dvh` segue la barra del browser che si ritira, ma
+   * non esiste ovunque — per questo la riga `vh` resta come ripiego.
+   */
+  .h-vh-fallback {
+    height: 100vh;
+    height: 100dvh;
+  }
+  .preview-viewport {
+    height: 70vh;
+    height: 70dvh;
+  }
+  @media (min-width: 1024px) {
+    .preview-viewport {
+      height: calc(100vh - 11rem);
+      height: calc(100dvh - 11rem);
+    }
+  }
+
+  /* Notch, tastiere e barre di sistema: niente contenuto sotto il bordo. */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  .safe-bottom {
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+
+  @media (max-width: 640px) {
+    /* Sotto i 16 px iOS ingrandisce la pagina quando il campo va a fuoco. */
+    .field {
+      font-size: 1rem;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise,
+  .aurora,
+  .pulse {
+    animation: none !important;
+  }
+  .card-hover:hover {
+    transform: none;
+  }
+}
+
+@layer components {
+  /* Superficie di vetro: barre superiori e schede in evidenza. */
+  .glass {
+    background: color-mix(in oklab, var(--color-surface-950) 72%, transparent);
+    backdrop-filter: blur(16px) saturate(140%);
+    border-bottom: 1px solid color-mix(in oklab, var(--color-surface-700) 55%, transparent);
+  }
+  .card {
+    border-radius: 1rem;
+    border: 1px solid color-mix(in oklab, var(--color-surface-700) 60%, transparent);
+    background: linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--color-surface-850) 80%, transparent),
+      color-mix(in oklab, var(--color-surface-950) 90%, transparent)
+    );
+    transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1), border-color 220ms ease, background 220ms ease;
+  }
+  .card-hover:hover {
+    transform: translateY(-3px);
+    border-color: color-mix(in oklab, var(--color-accent-500) 45%, transparent);
+  }
+  .btn-lg {
+    padding: 0.7rem 1.15rem;
+    font-size: 0.9375rem;
+    border-radius: 0.8rem;
+  }
+  .btn-outline {
+    background: color-mix(in oklab, var(--color-surface-900) 60%, transparent);
+    border-color: color-mix(in oklab, var(--color-surface-600) 70%, transparent);
+  }
+  .mono-label {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-ink-500);
+  }
+  .hairline {
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in oklab, var(--color-surface-600) 80%, transparent),
+      transparent
+    );
+  }
+  .stage-frame {
+    border-radius: 1rem;
+    border: 1px solid color-mix(in oklab, var(--color-surface-700) 70%, transparent);
+    background: var(--color-surface-900);
+    box-shadow: 0 50px 140px -70px color-mix(in oklab, var(--color-accent-500) 90%, transparent);
+  }
+}
+
+@keyframes atl-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.rise {
+  animation: atl-rise 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.rise-1 { animation-delay: 70ms; }
+.rise-2 { animation-delay: 140ms; }
+.rise-3 { animation-delay: 210ms; }
+.rise-4 { animation-delay: 280ms; }
+
+@keyframes atl-aurora {
+  0%, 100% { transform: translate3d(-4%, -2%, 0) scale(1); }
+  50% { transform: translate3d(6%, 4%, 0) scale(1.12); }
+}
+.aurora {
+  position: absolute;
+  inset: -20% -10% auto -10%;
+  height: 70vh;
+  pointer-events: none;
+  filter: blur(90px);
+  opacity: 0.45;
+  background:
+    radial-gradient(40% 55% at 25% 35%, color-mix(in oklab, var(--color-accent-500) 70%, transparent), transparent 70%),
+    radial-gradient(35% 50% at 70% 25%, color-mix(in oklab, var(--color-violet-500) 65%, transparent), transparent 72%),
+    radial-gradient(45% 60% at 55% 80%, color-mix(in oklab, var(--color-accent-600) 55%, transparent), transparent 70%);
+  animation: atl-aurora 18s ease-in-out infinite;
+}
+
+@keyframes atl-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.pulse {
+  animation: atl-pulse 1.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pulse {
+    animation: none;
+  }
+}

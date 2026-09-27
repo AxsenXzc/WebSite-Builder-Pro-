@@ -1,0 +1,25 @@
+node_modules/
+.next/
+out/
+dist/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+.next-dev.log
+
+# Riferimento esterno e artefatti derivati: non parte del progetto
+.ref/
+.atelier-preview/
+website-builder-pro-main.zip
+.next-start.log
+
+.env
+.env.local
+.env*.local
+!.env.example
+
+.DS_Store
+Thumbs.db
+
+# Stato locale del client di sviluppo
+.freebuff/
