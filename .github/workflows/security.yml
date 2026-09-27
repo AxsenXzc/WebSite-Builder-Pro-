@@ -1,0 +1,32 @@
+name: Sicurezza
+
+on:
+  schedule:
+    # Ogni lunedì alle 06:00 UTC
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+jobs:
+  audit:
+    name: Audit delle dipendenze
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Installa le dipendenze
+        run: npm ci
+
+      # Blocca solo su vulnerabilità gravi nelle dipendenze di produzione:
+      # gli strumenti di sviluppo non finiscono nel sito pubblicato.
+      - name: Vulnerabilità gravi in produzione
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Dipendenze non aggiornate (informativo)
+        run: npm outdated || true
