@@ -7,20 +7,14 @@ Nessun passaggio richiede di modificare il codice: sono credenziali e collegamen
 
 ## 1. Repository GitHub privato
 
-Il progetto non ha ancora un repository. Dal tuo account GitHub:
-
-1. **New repository** → nome `atelier` → **Private** → *non* aggiungere README/`.gitignore` (ci sono già).
-2. Copia l'indirizzo, per esempio `https://github.com/AxsenXzc/atelier.git`.
-3. Da questa cartella:
+Il repository esiste già: **`https://github.com/AxsenXzc/WebSite-Builder-Pro-.git`** (privato), con `origin` collegato e `main` allineato.
 
 ```bash
-git remote add origin https://github.com/AxsenXzc/atelier.git
-git push -u origin main
+git remote -v          # deve mostrare origin → AxsenXzc/WebSite-Builder-Pro-.git
+git push origin main   # Git Credential Manager autorizza al primo push
 ```
 
-Al primo push Git Credential Manager apre una finestra del browser per autorizzare l'accesso al tuo account: è l'unico passaggio interattivo.
-
-Da qui in poi ogni `git push` su `main` fa ripartire il deploy su Vercel.
+Da qui in poi ogni `git push` su `main` fa ripartire il deploy su Vercel. Le pipeline in `.github/workflows/` (`ci.yml`, `security.yml`) girano a ogni push: typecheck, test, build e audit settimanale delle dipendenze.
 
 ---
 
@@ -45,14 +39,25 @@ In alternativa, dal pannello Vercel: *Add New… → Project → Import Git Repo
 | `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` | per l'accesso GitHub | Vedi §3 |
 | `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | per l'accesso Google | Vedi §3 |
 | `GEMINI_API_KEY`, `GROQ_API_KEY`, `CEREBRAS_API_KEY`, `OPENROUTER_API_KEY`, `CLOUDFLARE_*` | no | Se presenti, l'AI riscrive i contenuti lato server. Senza, si compila offline: il sito esce completo comunque. |
+| `SUPABASE_URL` | per l'archivio cloud | Indirizzo del progetto Supabase, per esempio `https://xxxxxxxx.supabase.co`. |
+| `SUPABASE_PUBLISHABLE_KEY` | per l'archivio cloud | Chiave `sb_publishable_…`: è pubblica per costruzione, serve solo a indirizzare le RPC. |
+| `ATELIER_CLOUD_SECRET` | per l'archivio cloud | Segreto di firma della busta HMAC. **Deve coincidere** con il valore in `atelier.secrets` (vedi §5). |
+
+Senza tutte e tre le variabili cloud il pannello «Archivio cloud» della dashboard resta spento, con l'elenco delle variabili mancanti: i progetti continuano a vivere nel browser, senza errori.
 
 ### Controllo dopo il deploy
 
 `https://<tuo-dominio>/api/providers/health` deve rispondere con:
 
 ```json
-{ "sessionSecretConfigured": true, "authProviders": [{ "id": "github", "configured": true }, { "id": "google", "configured": true }] }
+{
+  "sessionSecretConfigured": true,
+  "authProviders": [{ "id": "github", "configured": true }, { "id": "google", "configured": true }],
+  "cloud": { "configured": true, "missing": [] }
+}
 ```
+
+La stessa lettura è mostrata in forma leggibile su `https://<tuo-dominio>/stato`, insieme ai provider AI e alle quote residue.
 
 ---
 
@@ -79,8 +84,45 @@ Apri `/login`: i due pulsanti non mostrano più l'avviso "non configurato". Dopo
 
 ---
 
-## 4. Cosa aspettarsi dai primi minuti
+## 4. Archivio cloud (Supabase, schema `atelier`)
 
-- Il deploy è autosufficiente: nessun database esterno, nessun servizio di autenticazione, nessuno storage remoto.
-- I progetti vivono in IndexedDB del browser. La sincronizzazione fra dispositivi è il passo successivo (Supabase, schema `atelier`), non un requisito per pubblicare.
+L'archivio è opzionale: senza di esso tutto continua a funzionare in locale. Per attivarlo servono due cose — il database e le variabili.
+
+### 4.1 Lo schema sul database
+
+Sul progetto Supabase:
+
+1. **SQL Editor** → incolla ed esegui `docs/migrations/002-cloud-entry.sql`.
+2. Genera il segreto di firma e mettilo **due volte**: in `ATELIER_CLOUD_SECRET` (variabile d'ambiente) e nella tabella `atelier.secrets`.
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
+```
+
+```sql
+insert into atelier.secrets (name, value)
+values ('atelier_cloud_secret', '<il-tuo-segreto>')
+on conflict (name) do update set value = excluded.value;
+```
+
+Lo script della migrazione fa già questo inserimento con un segnaposto: eseguilo e poi aggiorna il valore vero, oppure salta quella riga e usa l'`insert` qui sopra.
+
+### 4.2 Il contratto, in breve
+
+- Le tabelle vivono nello schema `atelier`, che **non è esposto via REST** e non ha privilegi per i ruoli Web: non esiste un endpoint con cui leggerle direttamente.
+- L'unica porta è la RPC `public.atelier_cloud_entry(payload text, ts bigint, sig text)`, con il corpo `{ "payload": "<JSON>", "ts": 1774…, "sig": "<hmac>" }`.
+- `sig` è l'HMAC-SHA256 (base64url) di `payload + "." + ts` calcolato con `ATELIER_CLOUD_SECRET`. Finestra di validità: 5 minuti.
+- Senza segreto corretto il database risponde «firma non valida» (o «firma fuori finestra» con un orologio spostato) e non esegue nulla. La sola chiave publishable non basta a leggere o scrivere.
+- L'owner dell'archivio è sempre derivato dalla sessione firmata: un account GitHub/Google usa `github:<id>` / `google:<id>`, una sessione locale un identificativo di dispositivo che il server emette in un cookie `atelier_device` (HttpOnly, un anno). Il client non può scegliere il bucket di un altro.
+
+### 4.3 Verifica manuale della firma
+
+Con le variabili impostate, la prova più rapida è dal pannello: **Dashboard → Archivio cloud → Sincronizza ora**, poi ricontrolla i numeri. Un secondo giro deve dire «tutto già allineato»; una firma sbagliata viene invece rifiutata dal database con un messaggio esplicito.
+
+---
+
+## 5. Cosa aspettarsi dai primi minuti
+
+- Il deploy è autosufficiente: nessun database esterno, nessun servizio di autenticazione, nessuno storage remoto sono *necessari* per pubblicare.
+- I progetti vivono in IndexedDB del browser. L'archivio cloud (Supabase, schema `atelier`) è un'aggiunta: quando è configurato, il pannello della dashboard sincronizza i progetti del workspace fra dispositivi; quando non lo è, resta spento e tutto continua a funzionare.
 - I provider gratuiti hanno limiti giornalieri: il router li prova in cascata e, se nessuno risponde entro le scadenze (25 s blueprint, 20 s per pagina, 90 s totali), consegna il sito generato dal composer con un avviso esplicito.

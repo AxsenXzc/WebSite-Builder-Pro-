@@ -1,4 +1,4 @@
-import { getDb, type SiteRecord, type VersionRecord } from "./db";
+import { getDb, type DeletionRecord, type SiteRecord, type VersionRecord } from "./db";
 import type { Site } from "@/lib/schema/site";
 
 /** Repository dei progetti: identico in locale e (in futuro) sul cloud. */
@@ -42,12 +42,21 @@ export async function loadSite(id: string): Promise<Site | null> {
   return record?.site ?? null;
 }
 
-export async function saveSite(site: Site, options: { snapshot?: string; owner?: string } = {}): Promise<void> {
+export async function saveSite(
+  site: Site,
+  options: { snapshot?: string; owner?: string; keepTimestamp?: boolean } = {},
+): Promise<void> {
   const db = getDb();
-  const stored: Site = { ...site, updatedAt: new Date().toISOString() };
+  // Nel pull dal cloud il timestamp arriva dal documento: va preservato, o la
+  // copia scaricata sembrerebbe più recente e la vincerebbe al giro dopo.
+  const stored: Site = options.keepTimestamp ? site : { ...site, updatedAt: new Date().toISOString() };
   const existing = await db.sites.get(stored.id);
   // Il proprietario non cambia mai da solo: chi ha creato il progetto resta.
-  await db.sites.put(toRecord(stored, existing?.owner ?? options.owner ?? GUEST_OWNER));
+  await db.transaction("rw", db.sites, db.deletions, async () => {
+    await db.sites.put(toRecord(stored, existing?.owner ?? options.owner ?? GUEST_OWNER));
+    // Un salvataggio è anche una resurrezione: la tomba cessa di valere.
+    await db.deletions.delete(stored.id);
+  });
 
   // Le versioni si creano solo su richiesta esplicita: lo storico non deve
   // crescere a ogni battitura.
@@ -63,10 +72,26 @@ export async function saveSite(site: Site, options: { snapshot?: string; owner?:
 
 export async function deleteSite(id: string): Promise<void> {
   const db = getDb();
-  await db.transaction("rw", db.sites, db.versions, async () => {
+  await db.transaction("rw", db.sites, db.versions, db.deletions, async () => {
     await db.sites.delete(id);
     await db.versions.where("siteId").equals(id).delete();
+    // Tomba locale: la sincronizzazione deve saperlo anche se il progetto
+    // non esiste più (altrimenti verrebbe riportato dal cloud).
+    await db.deletions.put({ id, deletedAt: new Date().toISOString() });
   });
+}
+
+/** Tutte le tombe conosciute da questo browser. */
+export async function listDeletions(): Promise<DeletionRecord[]> {
+  const db = getDb();
+  return db.deletions.toArray();
+}
+
+/** Le tombe di progetti che non esistono più da nessuna parte si possono dimenticare. */
+export async function clearDeletions(ids: string[]): Promise<void> {
+  if (!ids.length) return;
+  const db = getDb();
+  await db.deletions.bulkDelete(ids);
 }
 
 export async function listVersions(siteId: string): Promise<VersionRecord[]> {

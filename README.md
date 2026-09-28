@@ -47,6 +47,20 @@ Su questa macchina il binario nativo di SWC è bloccato da una policy di sistema
 /impostazioni      account, note di riservatezza, chiavi dei provider
 ```
 
+### Sito pubblico
+
+```
+/                   vetrina con anteprima generata nel browser, piani e domande principali
+/funzionalita       il compilatore, i gate, l'editor, l'export, i limiti dichiarati
+/piani              cosa è incluso, cosa costa zero, self-hosting
+/domande-frequenti  20 risposte con dati strutturati FAQPage
+/privacy            mappa dei dati: progetti nel browser, un solo cookie tecnico
+/termini            uso, proprietà dei contenuti, verifiche che restano all'utente
+/stato              diagnostica reale dell'istanza (noindex): cosa è configurato, senza chiavi
+```
+
+Header, footer, sitemap e dati strutturati leggono dall'anagrafica in `src/lib/site/pages.ts`: un link aggiunto una volta compare ovunque. L'URL canonico vive in `src/lib/util/site-url.ts` (prima la variabile di dominio di produzione, poi i fallback Vercel e `NEXT_PUBLIC_SITE_URL`). L'immagine social è generata da `src/app/opengraph-image.tsx`.
+
 L'accesso non è un cancello: le pagine interne chiedono una sessione, ma la sessione può nascere in locale con un nome e una firma HMAC, senza alcun provider configurato. I progetti sono separati per workspace (`provider:id`) dentro IndexedDB; i record creati prima dell'accesso restano visibili alla sessione ospite.
 
 Dalla dashboard un progetto si scarica in tre modi — archivio ZIP, HTML singolo, `progetto.atelier.json` — e si **reimporta** dallo stesso file: viene riletto con lo stesso schema con cui è stato scritto, quindi un file corrotto viene rifiutato con un motivo leggibile invece di entrare nell'editor.
@@ -61,6 +75,19 @@ Le credenziali si leggono solo dall'ambiente (mai dal client). Il flusso è OAut
 
 Se una coppia di credenziali manca, la pagina di accesso lo dice indicando il nome esatto della variabile e l'indirizzo dove crearle; il pulsante "Entra in locale" funziona comunque.
 
+### Archivio cloud (opzionale)
+
+I progetti vivono nel browser e ci restano: l'archivio cloud è un'aggiunta, non un requisito. Con tre variabili in più — `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `ATELIER_CLOUD_SECRET` — il pannello «Archivio cloud» della dashboard fa seguire i progetti al workspace fra dispositivi.
+
+- **La sincronizzazione parte solo dal pulsante.** Nessun dato attraversa la rete senza una decisione esplicita; senza variabili il pannello resta spento e dice quali mancano.
+- **Last-write-wins sull'istante di modifica**, applicato dal database con `where t.updated_at <= excluded.updated_at`: due dispositivi possono spingere in qualunque ordine senza cancellarsi il lavoro a vicenda.
+- **Le tombe impediscono le resurrezioni.** Una cancellazione è un istante, non un'assenza: senza di essa una sincronizzazione riporterebbe indietro il progetto eliminato altrove. Quando la tomba non è più vecchia di nessuna copia viva, la cancellazione vince su entrambi gli archivi; una riscrittura successiva alla tomba è invece una resurrezione lecita.
+- **A parità di istante non si muove niente.** Dopo una spinta il cloud conserva lo stesso istante del documento locale: se il pari contasse come «vince il locale», ogni giro rispederebbe tutto e il sistema non direbbe mai «tutto già allineato».
+- **L'owner non lo sceglie il client.** Un account GitHub/Google usa `github:<id>` o `google:<id>`; una sessione locale riceve dal server un identificativo di dispositivo in un cookie `atelier_device` (HttpOnly, un anno), così due browser non finiscono nello stesso bucket.
+- **Le tabelle non hanno un endpoint.** Vivono nello schema `atelier`, che non è fra gli schemi esposti via REST e su cui i ruoli Web non hanno nemmeno l'`usage`: l'unica porta è la RPC `atelier_cloud_entry`, che verifica una busta HMAC-SHA256 su `payload.ts` (finestra di 5 minuti) e inoltra l'operazione. Con la sola chiave publishable non si legge e non si scrive.
+
+Lo schema completo sta in `docs/migrations/001-cloud-archive.sql` (tabelle, indici, funzioni interne) e `docs/migrations/002-cloud-entry.sql` (la porta firmata); i passi operativi sono in `docs/DEPLOY.md`.
+
 ## Dispositivi
 
 - **Telefono (≤ 640 px):** barra dell'area di lavoro a icone, una colonna, nello Studio l'anteprima e il pannello di modifica si alternano (selettore pagina + Anteprima/Modifica), rail e inspector a piena larghezza.
@@ -71,7 +98,7 @@ Le misure sono state verificate a 390, 768 e 1440 px: nessuno scorrimento orizzo
 
 ## Test
 
-`tests/parity.test.ts` confronta l'anteprima React e l'HTML esportato nodo per nodo (linkedom), `tests/composer.test.ts` blocca regressioni di determinismo, unicità, contrasto e voce del settore, `tests/export.test.ts` verifica l'autosufficienza dell'export (compreso che script e CSS inline restino codice e non testo escapato), `tests/gates.test.ts` i gate di qualità e la sicurezza del markup, `tests/pipeline.test.ts` la scadenza degli stadi AI e la lettura tollerante del blueprint, `tests/port.test.ts` i brief di stile, il contratto d'errore delle API e le sessioni firmate.
+`tests/parity.test.ts` confronta l'anteprima React e l'HTML esportato nodo per nodo (linkedom), `tests/composer.test.ts` blocca regressioni di determinismo, unicità, contrasto e voce del settore, `tests/export.test.ts` verifica l'autosufficienza dell'export (compreso che script e CSS inline restino codice e non testo escapato), `tests/gates.test.ts` i gate di qualità e la sicurezza del markup, `tests/pipeline.test.ts` la scadenza degli stadi AI e la lettura tollerante del blueprint, `tests/cloud-plan.test.ts` il piano di sincronizzazione (convergenza, tombe, resurrezioni, lotti), `tests/cloud-sign.test.ts` la busta firmata e ogni tentativo di manomissione, `tests/port.test.ts` i brief di stile, il contratto d'errore delle API e le sessioni firmate.
 
 ## Robustezza
 
@@ -83,4 +110,4 @@ Le misure sono state verificate a 390, 768 e 1440 px: nessuno scorrimento orizzo
 
 - `.atelier-preview/` contiene un export di esempio generato a scopo di verifica visiva: è materiale derivato, si può cancellare.
 - `website-builder-pro-main.zip` è lo snapshot di riferimento usato per estrarre idee (brief di stile, contratto d'errore): non è una dipendenza del progetto.
-- `docs/PIANO.md` — specifica operativa; `docs/INTEGRAZIONI.md` — decisioni su Vercel, Supabase, Canva e limiti dei provider gratuiti.
+- `docs/PIANO.md` — specifica operativa; `docs/INTEGRAZIONI.md` — decisioni su Vercel, Supabase, Canva e limiti dei provider gratuiti; `docs/migrations/` — lo schema dell'archivio cloud e il suo contratto di firma.

@@ -3,6 +3,7 @@ import { QuotaLedger } from "@/lib/ai/quota-ledger";
 import { errorResponse } from "@/lib/util/api-error";
 import { isLocalSecret } from "@/lib/auth/session";
 import { providerConfig } from "@/lib/auth/oauth";
+import { cloudStatus } from "@/lib/cloud/config";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -33,6 +34,10 @@ function healthPayload(): Record<string, unknown> {
     // firmate con la chiave locale di ripiego.
     sessionSecretConfigured: !isLocalSecret(),
     authProviders: (["github", "google"] as const).map((id) => ({ id, configured: providerConfig(id).configured })),
+    // Stato dell'archivio cloud: nessun contatto con Supabase, solo la lettura
+    // della configurazione dell'istanza. Senza le variabili il pannello resta
+    // spento e i progetti vivono nel browser.
+    cloud: cloudStatus(),
     providers: keysReport(keys),
     quota: ledgerState ? ledgerState.snapshot(keysReport(keys).filter((item) => item.ready).map((item) => item.id)) : [],
     envDetected: Object.fromEntries(

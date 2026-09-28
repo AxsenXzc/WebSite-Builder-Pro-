@@ -43,11 +43,18 @@ export type GenerationRunRecord = {
   warnings: string[];
 };
 
+/** Tomba locale: il progetto è stato cancellato in questo browser. */
+export type DeletionRecord = {
+  id: string;
+  deletedAt: string;
+};
+
 class AtelierDatabase extends Dexie {
   sites!: Table<SiteRecord, string>;
   versions!: Table<VersionRecord, number>;
   settings!: Table<SettingRecord, string>;
   runs!: Table<GenerationRunRecord, number>;
+  deletions!: Table<DeletionRecord, string>;
 
   constructor() {
     super("atelier");
@@ -76,6 +83,16 @@ class AtelierDatabase extends Dexie {
             if (!record.owner) record.owner = "local:ospite";
           }),
       );
+
+    // v3 — tombe locali per la sincronizzazione: distinguono «non ancora
+    // scaricato» da «cancellato qui» quando il cloud elenca i progetti.
+    this.version(3).stores({
+      sites: "id, updatedAt, owner, slug, name, sector",
+      versions: "++id, siteId, createdAt",
+      settings: "key",
+      runs: "++id, siteId, createdAt",
+      deletions: "id, deletedAt",
+    });
   }
 }
 

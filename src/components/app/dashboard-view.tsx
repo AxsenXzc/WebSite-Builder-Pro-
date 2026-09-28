@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AppHeader } from "./app-header";
+import { CloudPanel } from "./cloud-panel";
 import { deleteSite, listSites, saveSite } from "@/lib/storage/site-repo";
 import { parseImportedSite, projectFileName } from "@/lib/storage/import-site";
 import type { SiteRecord } from "@/lib/storage/db";
@@ -146,11 +147,13 @@ export function DashboardView() {
             ))}
             <p className="col-span-3 border-t border-surface-800 pt-2 text-[11px] text-ink-600">
               {user?.provider === "local"
-                ? "Sessione locale: per ritrovare i progetti da un altro dispositivo serve un archivio cloud (previsto)."
-                : `Accesso con ${user?.provider}: i progetti restano comunque in locale finché non attivi l'archivio cloud.`}
+                ? "Sessione locale: i progetti vivono in questo browser. Con l'archivio cloud seguono il dispositivo anche da un altro computer."
+                : `Accesso con ${user?.provider}: con l'archivio cloud i progetti seguono l'account su ogni dispositivo.`}
             </p>
           </div>
         </section>
+
+        <CloudPanel />
 
         {note ? (
           <p className="rounded-tool border border-surface-700 bg-surface-900 px-3 py-2 font-mono text-[11px] text-ink-500">{note}</p>

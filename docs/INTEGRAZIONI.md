@@ -11,7 +11,7 @@ Atelier è pensato per funzionare **da solo**: chiavi dell'utente, export static
 | Connettore | Cosa può fare l'**agente** (io) | Cosa deve fare **l'app da sola** |
 |---|---|---|
 | Vercel | creare il progetto, deployare, leggere log, gestire domini, deployare un sito generato | export ZIP + deploy via token dell'utente (o nessun deploy) |
-| Supabase | applicare migrazioni, eseguire SQL, generare tipi TS, creare bucket | sync opzionale con la chiave publishable dell'utente |
+| Supabase | applicare migrazioni, eseguire SQL, generare tipi TS, creare bucket | archivio cloud opzionale: la chiave publishable indirizza le RPC, ma i contenuti passano solo con il segreto di firma dell'istanza |
 | Canva | generare logo/design on-brand, esportare PNG/JPG, leggere i brand kit | catena immagini con chiavi proprie (Gemini Image, FLUX) |
 | Playwright | navigare, screenshot, emulare dark/print/reduced-motion, verificare l'export | test E2E nel repo (Playwright installato come dipendenza) |
 
@@ -24,7 +24,7 @@ Conseguenza pratica: **nessuna funzionalità del prodotto può dipendere da un c
 | Ambito | Decisione | Dettagli |
 |---|---|---|
 | **Supabase** | schema isolato `atelier` dentro il progetto **`Dev Duos`** (`enodoptlvntdtfjchpmx`, region **eu-west-1**) | Nessun nuovo progetto, nessun costo, nessun rischio sui dati esistenti |
-| **Vercel** | **nuovo progetto dedicato `atelier-builder`**, team `team_iUJUaOjZnfAZQQAzeap5CntM` | Non si tocca `websitebuilder` né gli altri 10 progetti |
+| **Vercel** | **nuovo progetto dedicato `atelier-builder`**, team `team_iUJUaOjZnfAZQQAzeap5CntM` | Non si tocca `websitebuilder` né gli altri 10 progetti. Sorgente: repository privato `AxsenXzc/WebSite-Builder-Pro-` |
 | **Vercel (token)** | da **ri-autorizzare** per deploy | Lo scope `axsenxzcs-projects` oggi non è autorizzato su alcune operazioni (vedi §5) |
 | **Canva** | usato come **generatore di logo e asset di marca**, non come libreria di template | `generate-design` + `export-design` + brand kit |
 
@@ -45,6 +45,8 @@ Quindi: **tutto ciò che è di Atelier vive in `atelier.*`**, con RLS propria, e
 2. Le **RLS** di Atelier non devono basarsi su dati in `public.*` dell'altra app.
 
 Mitigazione già prevista dal piano: il repository di persistenza è un adapter, quindi la modalità locale resta il default e il cloud si attiva dopo, su un branch di test quando serve (`create_branch`).
+
+**Stato:** l'archivio cloud è implementato e verificato end-to-end (generazione → salvataggio nel browser → spinta → riga in `atelier.projects` → secondo giro «tutto già allineato» → cancellazione propagata con tomba). Si accende con tre variabili d'ambiente e resta spento senza, senza errori. Lo schema è documentato in `docs/migrations/`.
 
 ---
 
