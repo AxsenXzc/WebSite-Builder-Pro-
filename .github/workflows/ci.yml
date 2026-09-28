@@ -39,3 +39,17 @@ jobs:
           # Il build non ha bisogno di segreti: il composer deterministico e i
           # gate non richiedono chiavi. Le variabili vere si impostano su Vercel.
           NEXT_TELEMETRY_DISABLED: "1"
+
+      # Controllo di rilascio: avvia l'artefatto di produzione e lo interroga
+      # come farebbe un browser. Con `--solo-istanza` l'archivio cloud e gli
+      # accessi social sono note, non errori: qui non sono configurati.
+      - name: Verifica del rilascio sull'istanza locale
+        run: |
+          ATELIER_SESSION_SECRET=chiave-di-prova-lunga-abbastanza-almeno-16 npm start > /tmp/atelier.log 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl -sf -o /dev/null http://localhost:3000/; then break; fi
+            sleep 1
+          done
+          node scripts/check-deploy.mjs http://localhost:3000 --solo-istanza || { cat /tmp/atelier.log; exit 1; }
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"

@@ -24,30 +24,66 @@ Il modo più diretto è la CLI (una volta sola):
 
 ```bash
 npx vercel login          # apre il browser, autorizzi il tuo account
-npx vercel link           # crea/collega il progetto "atelier"
-npx vercel env add ATELIER_SESSION_SECRET production
+npx vercel link           # crea/collega il progetto
+npm run env:vercel        # stampa le variabili da aggiungere (vedi sotto)
+npx vercel env add ATELIER_SESSION_SECRET production   # una per variabile
 npx vercel --prod         # deploy
 ```
 
-In alternativa, dal pannello Vercel: *Add New… → Project → Import Git Repository* → scegli `atelier` → framework **Next.js** rilevato da solo, build `npm run build`, nessuna configurazione aggiuntiva.
+In alternativa, dal pannello Vercel: **Add New… → Project → Import Git Repository** → repository **`AxsenXzc/WebSite-Builder-Pro-`** → framework **Next.js** rilevato da solo, build `npm run build`, nessuna configurazione aggiuntiva. Il nome del progetto Vercel lo scegli tu: `atelier-builder` va bene.
 
-### Variabili d'ambiente (Vercel → Project → Settings → Environment Variables)
+### Le variabili, esatte
 
-| Variabile | Obbligatoria | Perché |
+Non serve ricordarle: lo script ti stampa l'elenco con i valori già dentro, pronti da copiare.
+
+```bash
+npm run env:vercel              # valori in chiaro, da incollare in Vercel
+npm run env:vercel -- --maschera   # valori nascosti, per schermate condivise
+```
+
+Prima di stamparli, lo script prova il segreto di firma contro il database vero: se non combacia con `atelier.secrets`, te lo dice **adesso** invece di lasciartelo scoprire alla prima sincronizzazione, quando l'unico sintomo sarebbe «firma non valida». Esce con codice 1 se qualcosa di obbligatorio manca.
+
+Poi: Vercel → **Project → Settings → Environment Variables**, ambiente **Production** (e **Preview**, così anche le anteprime funzionano), una casella per riga.
+
+| Variabile | Obbligatoria | Da dove viene |
 |---|---|---|
-| `ATELIER_SESSION_SECRET` | **sì** | Firma le sessioni. Senza, Vercel usa la chiave locale di ripiego: le sessioni funzionano ma non sopravvivono a un cambio di macchina e il cookie non viene marcato `Secure`. Almeno 16 caratteri casuali. |
+| `ATELIER_SESSION_SECRET` | **sì** | Firma le sessioni. Generane una con `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"`. Senza, Vercel usa la chiave locale di ripiego: le sessioni funzionano ma non sopravvivono a un cambio di macchina e il cookie non viene marcato `Secure`. Almeno 16 caratteri. |
 | `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` | per l'accesso GitHub | Vedi §3 |
 | `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | per l'accesso Google | Vedi §3 |
 | `GEMINI_API_KEY`, `GROQ_API_KEY`, `CEREBRAS_API_KEY`, `OPENROUTER_API_KEY`, `CLOUDFLARE_*` | no | Se presenti, l'AI riscrive i contenuti lato server. Senza, si compila offline: il sito esce completo comunque. |
 | `SUPABASE_URL` | per l'archivio cloud | Indirizzo del progetto Supabase, per esempio `https://xxxxxxxx.supabase.co`. |
 | `SUPABASE_PUBLISHABLE_KEY` | per l'archivio cloud | Chiave `sb_publishable_…`: è pubblica per costruzione, serve solo a indirizzare le RPC. |
-| `ATELIER_CLOUD_SECRET` | per l'archivio cloud | Segreto di firma della busta HMAC. **Deve coincidere** con il valore in `atelier.secrets` (vedi §5). |
+| `ATELIER_CLOUD_SECRET` | per l'archivio cloud | Segreto di firma della busta HMAC. **Deve coincidere** con il valore in `atelier.secrets` (vedi §4.1). |
 
 Senza tutte e tre le variabili cloud il pannello «Archivio cloud» della dashboard resta spento, con l'elenco delle variabili mancanti: i progetti continuano a vivere nel browser, senza errori.
 
-### Controllo dopo il deploy
+Un dettaglio che fa perdere mezz'ora a chi non lo sa: **le variabili entrano in un deploy già costruito? No.** Dopo averle salvate, Vercel → **Deployments → Redeploy**. Fino a lì l'istanza continua a girare con quelle di prima.
 
-`https://<tuo-dominio>/api/providers/health` deve rispondere con:
+### Il controllo automatico del rilascio
+
+Un comando, e sai se il deploy è a posto — senza aprire il browser:
+
+```bash
+npm run check:deploy -- https://<tuo-dominio>
+```
+
+Cosa guarda, dal di fuori:
+
+| Controllo | Cosa deve risultare |
+|---|---|
+| Home e immagine social | rispondono 200, l'immagine è davvero un PNG |
+| `/dashboard` senza sessione | rimanda a `/login` (la guardia sta in piedi) |
+| `/api/cloud/status` senza sessione | risponde 401 |
+| `/api/providers/health` | `sessionSecretConfigured: true` e `cloud.configured: true` |
+| `/stato` | risponde 200, mostra i pannelli, e resta `noindex` |
+| Cookie di sessione | `HttpOnly`, `SameSite=Lax` e — su HTTPS — `Secure` |
+| **Firma dell'archivio** | con una sessione vera il server legge l'archivio: è la prova che `ATELIER_CLOUD_SECRET` su Vercel è quello giusto |
+| Sitemap, robots, canonico | puntano al dominio atteso |
+| Archivio chiuso | `atelier.projects` non è leggibile via REST (404) e le RPC interne non sono chiamabili (401) |
+
+Esce con codice 1 se un controllo fallisce, e ogni riga dice cosa fare. È lo stesso script che gira in CI a ogni push (`--solo-istanza`, dove cloud e accessi social sono note e non errori).
+
+Se preferisci leggere i dati grezzi: `https://<tuo-dominio>/api/providers/health` risponde
 
 ```json
 {
@@ -57,7 +93,21 @@ Senza tutte e tre le variabili cloud il pannello «Archivio cloud» della dashbo
 }
 ```
 
-La stessa lettura è mostrata in forma leggibile su `https://<tuo-dominio>/stato`, insieme ai provider AI e alle quote residue.
+La stessa lettura, in forma leggibile, è su `https://<tuo-dominio>/stato`: quella pagina non si indice e non server a nessuno tranne a chi installa.
+
+### Il dominio
+
+1. **Vercel → Project → Settings → Domains → Add**: scrivi il dominio e segui le istruzioni DNS che ti mostra (un `CNAME` verso `cname.vercel-dns.com`, o i record `A` per l'apex).
+2. **Nessuna variabile da toccare.** Su Vercel il dominio canonico arriva da `VERCEL_PROJECT_PRODUCTION_URL`, che la piattaforma aggiorna da sola: sitemap, `robots.txt`, Open Graph e dati strutturati si spostano sul dominio nuovo al primo deploy successivo.
+3. **Verifica con lo script**, dicendogli quale dominio pretendere:
+
+```bash
+npm run check:deploy -- https://<tuo-dominio> --dominio https://<tuo-dominio>
+```
+
+Senza `--dominio` lo script confronta con l'indirizzo che stai interrogando e segnala la differenza come avviso: è normale su un deploy di anteprima (il canonico punta alla produzione), non lo è sul dominio finale.
+
+`NEXT_PUBLIC_SITE_URL` serve solo se pubblichi **fuori** da Vercel (Netlify, un server tuo): lì va impostata **prima della build**, perché è una variabile `NEXT_PUBLIC_*` e Next la incide nel pacchetto in fase di costruzione, non la rilegge all'avvio.
 
 ---
 

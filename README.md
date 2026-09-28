@@ -88,6 +88,15 @@ I progetti vivono nel browser e ci restano: l'archivio cloud è un'aggiunta, non
 
 Lo schema completo sta in `docs/migrations/001-cloud-archive.sql` (tabelle, indici, funzioni interne) e `docs/migrations/002-cloud-entry.sql` (la porta firmata); i passi operativi sono in `docs/DEPLOY.md`.
 
+### Deploy e verifica
+
+```bash
+npm run env:vercel                # le variabili da incollare su Vercel, già provate contro il database
+npm run check:deploy -- https://<tuo-dominio>   # verifica il rilascio, dal di fuori
+```
+
+Il secondo comando è un controllo di rilascio, non un test unitario: chiede alla pagina pubblica di rispondere, alle pagine interne di proteggersi, al cookie di essere `HttpOnly` e `Secure`, all'istanza di leggere davvero l'archivio (prova del segreto di firma) e al dominio di essere quello giusto in sitemap, `robots.txt` e indirizzo canonico. Esce con codice 1 se qualcosa non torna e dice cosa sistemare. Gli stessi controlli — meno quelli che richiedono una configurazione esterna — girano in CI a ogni push, contro l'artefatto di produzione appena costruito.
+
 ## Dispositivi
 
 - **Telefono (≤ 640 px):** barra dell'area di lavoro a icone, una colonna, nello Studio l'anteprima e il pannello di modifica si alternano (selettore pagina + Anteprima/Modifica), rail e inspector a piena larghezza.

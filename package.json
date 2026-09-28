@@ -15,7 +15,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "verify": "npm run typecheck && npm run test"
+    "verify": "npm run typecheck && npm run test",
+    "env:vercel": "node scripts/env-vercel.mjs",
+    "check:deploy": "node scripts/check-deploy.mjs"
   },
   "dependencies": {
     "@ai-sdk/cerebras": "3.0.57",
