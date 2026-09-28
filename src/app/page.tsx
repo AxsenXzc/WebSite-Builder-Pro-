@@ -1,8 +1,22 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteHeader } from "@/components/site/site-header";
+import { SiteFooter } from "@/components/site/site-footer";
 import { DemoFrame } from "@/components/site/demo-frame";
 import { PresetGallery } from "@/components/site/preset-gallery";
 import { STYLE_BRIEFS } from "@/lib/design/style-briefs";
+import { SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/lib/util/site-url";
+
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+  description: SITE_TAGLINE,
+  openGraph: {
+    title: `${SITE_NAME} — website builder AI`,
+    description: SITE_TAGLINE,
+    url: SITE_URL,
+    type: "website",
+  },
+};
 
 const PROMISES = [
   {
@@ -45,6 +59,46 @@ const STAGES = [
   },
 ];
 
+const PLANS = [
+  {
+    name: "Locale",
+    price: "0 €",
+    text: "Il compilatore deterministico, l'editor, i gate e l'export: nessun account, nessuna chiave, nessuna chiamata di rete.",
+    note: "È il percorso predefinito di Atelier.",
+  },
+  {
+    name: "Con le tue chiavi",
+    price: "0 €",
+    text: "Aggiungi una chiave di un provider AI e i testi vengono riscritti dal modello. La chiave resta nel tuo browser.",
+    note: "Paghi il provider, non Atelier: nessun credito da comprare qui.",
+  },
+  {
+    name: "Self-hosting",
+    price: "0 €",
+    text: "Installi il progetto sul tuo dominio, con le tue variabili e le tue app OAuth. Nessun servizio obbligatorio a monte.",
+    note: "Guida al deploy e controlli post-pubblicazione inclusi.",
+  },
+];
+
+const HOME_FAQ = [
+  {
+    q: "Serve un account o una chiave API?",
+    a: "No. L'accesso locale crea un workspace nel browser e il composer deterministico genera il sito senza rete. GitHub, Google e i provider AI sono aggiunte facoltative.",
+  },
+  {
+    q: "Dove finiscono i miei progetti?",
+    a: "Nell'archivio del browser. Non c'è un database di progetti lato server: per portarli altrove esporti il file di progetto, che si reimporta identico.",
+  },
+  {
+    q: "L'anteprima è davvero uguale al file scaricato?",
+    a: "Sì, per costruzione: editor ed export nascono dallo stesso albero di markup e dallo stesso foglio di stile. Non esistono due renderer da tenere allineati.",
+  },
+  {
+    q: "Quanto pesa un sito generato?",
+    a: "Centinaia di kilobyte per un sito informativo completo: le immagini sono generate proceduralmente dal tema e il gate del peso mostra il numero reale prima dell'export.",
+  },
+];
+
 const EXPORT_POINTS = [
   "6-7 pagine reali, con titoli, descrizioni e dati strutturati",
   "Privacy e Cookie policy scritte, non segnaposto",
@@ -56,11 +110,42 @@ const EXPORT_POINTS = [
   "File HTML singolo, se ti serve una sola pagina autosufficiente",
 ];
 
+const STRUCTURED_DATA = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      name: SITE_NAME,
+      applicationCategory: "DesignApplication",
+      operatingSystem: "Browser",
+      description: SITE_TAGLINE,
+      url: SITE_URL,
+      inLanguage: "it-IT",
+      offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" },
+      featureList: [
+        "Compilatore deterministico che funziona senza chiavi API",
+        "Otto direzioni visive con brief di stile",
+        "Editor visuale sullo stesso albero dell'export",
+        "Gate di qualità su contrasto, SEO, accessibilità, sicurezza e peso",
+        "Export in archivio statico, pagina singola e file di progetto reimportabile",
+      ],
+    },
+    {
+      "@type": "WebSite",
+      name: SITE_NAME,
+      url: SITE_URL,
+      inLanguage: "it-IT",
+      description: SITE_TAGLINE,
+    },
+  ],
+};
+
 export default function HomePage() {
   const presets = Object.values(STYLE_BRIEFS);
 
   return (
     <div className="min-h-screen overflow-x-hidden">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(STRUCTURED_DATA) }} />
       <SiteHeader />
 
       {/* Apertura */}
@@ -221,6 +306,67 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Piani */}
+      <section id="piani" className="mx-auto max-w-6xl scroll-mt-20 px-5 py-14">
+        <header className="grid max-w-2xl gap-2">
+          <span className="mono-label">quanto costa</span>
+          <h2 className="text-3xl font-semibold tracking-tight">Nessun abbonamento, nessun limite per progetto</h2>
+          <p className="text-sm text-ink-500">
+            Atelier non vende crediti e non mette un tetto ai siti che generi. L&apos;unica cosa che può costare qualcosa è la chiave
+            del provider AI, pagata direttamente a chi la eroga.
+          </p>
+        </header>
+
+        <div className="mt-6 grid gap-3 sm:grid-cols-3">
+          {PLANS.map((plan) => (
+            <article key={plan.name} className="card grid content-start gap-2 p-5">
+              <div className="flex items-baseline justify-between gap-2">
+                <h3 className="text-sm font-semibold">{plan.name}</h3>
+                <span className="text-2xl font-semibold tracking-tight">{plan.price}</span>
+              </div>
+              <p className="text-[13px] leading-relaxed text-ink-500">{plan.text}</p>
+              <p className="text-[11px] text-ink-600">{plan.note}</p>
+            </article>
+          ))}
+        </div>
+
+        <div className="mt-5 flex flex-wrap items-center gap-3">
+          <Link className="btn" href="/piani">
+            Dettaglio dei piani
+          </Link>
+          <Link className="btn" href="/funzionalita">
+            Tutte le funzionalità
+          </Link>
+          <span className="text-xs text-ink-600">0 € per il motore offline · 0 € per l&apos;export · chiavi AI tue</span>
+        </div>
+      </section>
+
+      {/* Domande */}
+      <section id="domande" className="mx-auto max-w-6xl scroll-mt-20 px-5 py-14">
+        <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+          <header className="grid content-start gap-2">
+            <span className="mono-label">domande frequenti</span>
+            <h2 className="text-3xl font-semibold tracking-tight">Le quattro domande che arrivano per prime</h2>
+            <p className="text-sm text-ink-500">
+              Account, dati, parità fra anteprima ed export, peso del sito. Le altre risposte — con prezzi, self-hosting e limiti
+              dichiarati — sono nella pagina dedicata.
+            </p>
+            <Link className="btn btn-outline w-fit" href="/domande-frequenti">
+              Tutte le domande
+            </Link>
+          </header>
+
+          <div className="grid gap-2">
+            {HOME_FAQ.map((item) => (
+              <details key={item.q} className="faq">
+                <summary>{item.q}</summary>
+                <div className="text-[13px] leading-relaxed text-ink-500">{item.a}</div>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Chiusura */}
       <section className="mx-auto max-w-6xl px-5 py-16">
         <div className="card relative overflow-hidden p-8 text-center">
@@ -245,25 +391,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <footer className="border-t border-surface-800">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5 py-8 text-xs text-ink-600">
-          <span>Atelier — website builder AI local-first.</span>
-          <nav className="flex flex-wrap gap-4">
-            <a className="hover:text-ink-300" href="#come-funziona">
-              Come funziona
-            </a>
-            <a className="hover:text-ink-300" href="#stili">
-              Stili
-            </a>
-            <a className="hover:text-ink-300" href="#qualita">
-              Qualità
-            </a>
-            <Link className="hover:text-ink-300" href="/login">
-              Accedi
-            </Link>
-          </nav>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

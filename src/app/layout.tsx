@@ -1,34 +1,34 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { SITE_NAME, SITE_URL } from "@/lib/util/site-url";
 
-const siteUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
-  ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-  : process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : "http://localhost:3000";
+const siteUrl = SITE_URL;
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Atelier — website builder AI",
-    template: "%s · Atelier",
+    default: `${SITE_NAME} — website builder AI`,
+    template: `%s · ${SITE_NAME}`,
   },
   description:
     "Descrivi l'attività, ottieni un sito completo: pagine, testi, SEO e pagine legali. Editor visuale ed export statico autosufficiente. Local-first: funziona anche senza chiavi API.",
-  applicationName: "Atelier",
+  applicationName: SITE_NAME,
   keywords: ["website builder", "AI", "sito web", "statico", "SEO", "local-first"],
-  authors: [{ name: "Atelier" }],
+  authors: [{ name: SITE_NAME }],
   // La vetrina si indicizza; le pagine interne dichiarano `noindex` per conto loro.
   robots: { index: true, follow: true },
   openGraph: {
     type: "website",
     locale: "it_IT",
     url: siteUrl,
-    siteName: "Atelier",
+    siteName: SITE_NAME,
     title: "Atelier — website builder AI",
     description:
       "Un prompt, un sito completo e pubblicabile. Funziona senza chiavi API, l'anteprima è identica all'export.",
   },
+  category: "design",
+  creator: SITE_NAME,
+  publisher: SITE_NAME,
   twitter: {
     card: "summary_large_image",
     title: "Atelier — website builder AI",

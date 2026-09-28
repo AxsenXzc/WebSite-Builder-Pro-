@@ -237,6 +237,135 @@
     background: var(--color-surface-900);
     box-shadow: 0 50px 140px -70px color-mix(in oklab, var(--color-accent-500) 90%, transparent);
   }
+  .nav-link {
+    border-radius: var(--radius-tool);
+    padding: 0.4rem 0.7rem;
+    font-size: 0.8125rem;
+    color: var(--color-ink-500);
+    transition: background 140ms ease, color 140ms ease;
+  }
+  .nav-link:hover {
+    background: var(--color-surface-850);
+    color: var(--color-ink-100);
+  }
+  .nav-link[aria-current="page"] {
+    color: var(--color-ink-100);
+    background: color-mix(in oklab, var(--color-surface-850) 80%, transparent);
+  }
+
+  /*
+   * Testi lunghi (pagine legali, domande frequenti, guide): una sola
+   * definizione così la gerarchia resta identica su ogni dispositivo.
+   */
+  .doc {
+    display: grid;
+    gap: 0.9rem;
+    font-size: 0.9375rem;
+    line-height: 1.75;
+    color: var(--color-ink-500);
+    overflow-wrap: break-word;
+  }
+  .doc h2 {
+    margin-top: 0.75rem;
+    font-size: 1.0625rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--color-ink-100);
+  }
+  .doc h3 {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--color-ink-100);
+  }
+  .doc ul {
+    display: grid;
+    gap: 0.45rem;
+    padding-left: 1.15rem;
+    list-style: disc;
+  }
+  .doc ol {
+    display: grid;
+    gap: 0.45rem;
+    padding-left: 1.15rem;
+    list-style: decimal;
+  }
+  .doc li::marker {
+    color: var(--color-accent-400);
+  }
+  .doc strong {
+    font-weight: 600;
+    color: var(--color-ink-100);
+  }
+  .doc a {
+    color: var(--color-accent-400);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .doc code {
+    border-radius: 0.35rem;
+    background: var(--color-surface-850);
+    padding: 0.05rem 0.32rem;
+    font-family: var(--font-mono);
+    font-size: 0.82em;
+    color: var(--color-ink-100);
+  }
+  .doc table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+  }
+  .doc th,
+  .doc td {
+    border-bottom: 1px solid color-mix(in oklab, var(--color-surface-700) 60%, transparent);
+    padding: 0.5rem 0.6rem;
+    text-align: left;
+    vertical-align: top;
+  }
+  .doc th {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-ink-600);
+    font-weight: 500;
+  }
+
+  /* Domanda/risposta apribile: usata nelle pagine di approfondimento. */
+  .faq {
+    border-radius: 0.85rem;
+    border: 1px solid color-mix(in oklab, var(--color-surface-700) 55%, transparent);
+    background: color-mix(in oklab, var(--color-surface-900) 70%, transparent);
+  }
+  .faq > summary {
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.85rem 1rem;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: var(--color-ink-100);
+  }
+  .faq > summary::-webkit-details-marker {
+    display: none;
+  }
+  .faq > summary::after {
+    content: "+";
+    flex: none;
+    font-family: var(--font-mono);
+    color: var(--color-accent-400);
+  }
+  .faq[open] > summary::after {
+    content: "−";
+  }
+  .faq[open] > summary {
+    border-bottom: 1px solid color-mix(in oklab, var(--color-surface-700) 45%, transparent);
+  }
+  .faq > div {
+    padding: 0.85rem 1rem 1rem;
+  }
 }
 
 @keyframes atl-rise {
